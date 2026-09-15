@@ -486,12 +486,14 @@ function scegliCliente(c){
   $('cl-nome').textContent = c.nome;
   $('cl-cod').textContent = c.cod;
   $('cl-stato').textContent = c.stato;
-  $('cl-sconto').textContent = (c.sconto*100).toFixed(0) + ' %';
+  $('cl-sconto').textContent = c.sconto > 0
+    ? (c.sconto*100).toFixed(0) + ' %'
+    : 'Prezzi concordati';
   $('cl-listino').textContent = c.listino === 'express' ? 'EXPRESS' : 'GENERALE';
   $('cl-art').textContent = nf0.format(LISTINO.length) + ' articoli';
   $('cl-badge').innerHTML =
     `<span class="badge ${c.stato==='EX'?'b-ex':'b-spa'}">${c.stato}</span>
-     <span class="badge b-sc">sconto ${Math.round(c.sconto*100)}%</span>`;
+     <span class="badge b-sc">${c.sconto > 0 ? 'sconto ' + Math.round(c.sconto*100) + '%' : 'prezzi concordati'}</span>`;
 
   const note = $('cl-note');
   if(c.note && c.note.toUpperCase() !== 'NO'){
@@ -649,27 +651,40 @@ function disegna(){
    ============================================================ */
 const ARCH_KEY = 'cherubini_archivio_v1';
 const SEED_APPLIED_KEY = 'cherubini_seed_applied_v1';
+const SEED_VER_KEY = 'cherubini_seed_version_v1';
 let EDIT_ID = null;        // id del preventivo in modifica (per non duplicare)
 
-/* Importa una sola volta i preventivi precaricati (data/archivio-seed.js).
-   Se l'utente poi li cancella NON tornano: gli id applicati restano tracciati. */
+/* Importa i preventivi precaricati (data/archivio-seed.js).
+   - id mai visto          -> aggiunge
+   - id già applicato e poi cancellato -> NON ritorna
+   - id in archivio + seed più recente -> aggiorna il record (revisione) */
 function applicaSeed(){
   const seed = window.CHERUBINI_SEED;
   if(!seed || !Array.isArray(seed.preventivi) || !seed.preventivi.length) return 0;
+  const ver = parseInt(seed.version || '1', 10) || 1;
 
-  let applicati = [];
+  let applicati = [], verAppl = 0;
   try{ applicati = JSON.parse(localStorage.getItem(SEED_APPLIED_KEY) || '[]'); }catch(e){}
+  try{ verAppl = parseInt(localStorage.getItem(SEED_VER_KEY) || '0', 10) || 0; }catch(e){}
   const gia = new Set(applicati);
 
   const list = leggiArchivio();
-  const ids = new Set(list.map(p => p.id));
-  const nuovi = seed.preventivi.filter(p => p && p.id && !ids.has(p.id) && !gia.has(p.id));
-  if(!nuovi.length) return 0;
+  const pos = new Map(list.map((p, i) => [p.id, i]));
+  let toccati = 0;
 
-  if(!scriviArchivio(list.concat(nuovi))) return 0;
-  nuovi.forEach(p => gia.add(p.id));
-  try{ localStorage.setItem(SEED_APPLIED_KEY, JSON.stringify([...gia])); }catch(e){}
-  return nuovi.length;
+  seed.preventivi.forEach(sp => {
+    if(!sp || !sp.id) return;
+    if(pos.has(sp.id)){
+      if(ver > verAppl){ list[pos.get(sp.id)] = sp; toccati++; }   // aggiorna alla revisione
+    } else if(!gia.has(sp.id)){
+      list.push(sp); gia.add(sp.id); toccati++;
+    }
+  });
+
+  if(toccati && !scriviArchivio(list)) return 0;
+  if(toccati) try{ localStorage.setItem(SEED_APPLIED_KEY, JSON.stringify([...gia])); }catch(e){}
+  if(ver > verAppl) try{ localStorage.setItem(SEED_VER_KEY, String(ver)); }catch(e){}
+  return toccati;
 }
 
 function uid(){
@@ -791,11 +806,13 @@ function renderArchivio(){
     return `<div class="arch-item">
       <div class="h">
         <div>
-          <div class="num">PREVENTIVO ${p.num}</div>
+          <div class="num">PREVENTIVO ${p.num}${p.rev > 1 ? ' · REV. ' + String(p.rev).padStart(2, '0') : ''}</div>
           <div class="cli">${p.cliente.nome}</div>
           <div class="meta">${p.cliente.cod} · ${p.listino === 'express' ? 'EXPRESS' : 'GENERALE'}
-            · sconto ${Math.round(sc*100)}% · ${fmtData(p.data)}</div>
+            · ${p.tipo === 'concordato' ? 'prezzi concordati' : 'sconto ' + Math.round(sc*100) + '%'}
+            · ${fmtData(p.data)}</div>
           <div class="meta">${art} articoli · ${nf0.format(pezzi)} pezzi</div>
+          ${p.note_interne ? `<div class="meta" style="color:#b85f06;font-weight:600;margin-top:4px">⚑ ${p.note_interne}</div>` : ''}
         </div>
         <div class="amt">
           <div class="v">${eur(p.tot)}</div>
@@ -815,10 +832,14 @@ function renderArchivio(){
 function trovaPrev(id){ return leggiArchivio().find(p => p.id === id); }
 
 function caricaInEditor(p){
-  const c = CLI.find(x => x.cod === p.cliente.cod) || {
+  // lo sconto da usare è quello SALVATO nel preventivo, non quello attuale del cliente
+  // (un preventivo a prezzi concordati ha sconto 0 anche se il cliente ha una sconto contrattuale)
+  const master = CLI.find(x => x.cod === p.cliente.cod);
+  const c = Object.assign({}, master || {}, {
     cod: p.cliente.cod, nome: p.cliente.nome, stato: p.cliente.stato,
-    sconto: p.cliente.sconto, listino: p.listino, note: ''
-  };
+    sconto: (typeof p.cliente.sconto === 'number') ? p.cliente.sconto : 0,
+    listino: p.listino, note: (master && master.note) || ''
+  });
   scegliCliente(c);
   RIGHE = p.righe.map(r => ({cod: r.cod, desc: r.desc, prezzo: r.prezzo, qta: r.qta}));
   $('p-note').value = p.note || '';
@@ -921,8 +942,11 @@ function stampa(){
 
   // salva (o aggiorna) in archivio prima di stampare
   const numPrev = salvaInArchivio(false) || '—';
+  const recPrev = EDIT_ID ? trovaPrev(EDIT_ID) : null;
+  const revPrev = recPrev && recPrev.rev ? recPrev.rev : 1;
 
   const sc = CLIENTE.sconto;
+  const colSconto = sc > 0;          // con prezzi concordati (sconto 0) niente colonna listino
   const tl = totaleListino(), tn = totaleNetto();
   const iva = tn * (D.meta.iva/100), tot = tn + iva;
   const dt = $('p-data').value || dataItaliana();
@@ -935,8 +959,8 @@ function stampa(){
       <td style="font-weight:700;color:#08202d;font-size:9pt">${r.cod}</td>
       <td>${r.desc}</td>
       <td style="text-align:right">${r.qta}</td>
-      <td style="text-align:right">${eur(r.prezzo)}</td>
-      <td style="text-align:right">${eur(netto)}</td>
+      ${colSconto ? `<td style="text-align:right">${eur(r.prezzo)}</td>` : ''}
+      <td style="text-align:right">${eur(colSconto ? netto : r.prezzo)}</td>
       <td style="text-align:right;font-weight:700">${eur(netto*r.qta)}</td>
     </tr>`;
   }).join('');
@@ -952,7 +976,7 @@ function stampa(){
       </div>
     </div>
 
-    <div class="p-title">Preventivo Cherubini n. ${numPrev} — Listino ${lista}</div>
+    <div class="p-title">Preventivo Cherubini n. ${numPrev}${revPrev > 1 ? ' Rev. ' + String(revPrev).padStart(2, '0') : ''} — Listino ${lista}</div>
     <div style="font-size:9.5pt;color:#5b6b76;margin-bottom:14px">Listino Cherubini in vigore dal 01/06/2026 · validità 30 giorni</div>
 
     <div class="p-block">
@@ -960,7 +984,7 @@ function stampa(){
       <div class="b"><i>Data</i><b>${dt}</b></div>
       <div class="b"><i>Validità</i><b>${$('p-valid').value}</b></div>
       <div class="b"><i>Pagamento</i><b>${$('p-pag').value}</b></div>
-      <div class="b"><i>Sconto applicato</i><b>${Math.round(sc*100)} %</b></div>
+      <div class="b"><i>${colSconto ? 'Sconto applicato' : 'Condizioni'}</i><b>${colSconto ? Math.round(sc*100) + ' %' : 'Prezzi concordati'}</b></div>
     </div>
 
     <table>
@@ -968,18 +992,18 @@ function stampa(){
         <tr>
           <th style="width:30px">#</th><th style="width:108px">Codice</th><th>Descrizione</th>
           <th style="width:60px;text-align:right">Q.tà</th>
-          <th style="width:88px;text-align:right">Prezzo listino</th>
-          <th style="width:88px;text-align:right">Prezzo netto</th>
-          <th style="width:96px;text-align:right">Totale netto</th>
+          ${colSconto ? '<th style="width:88px;text-align:right">Prezzo listino</th>' : ''}
+          <th style="width:94px;text-align:right">${colSconto ? 'Prezzo netto' : 'Prezzo unitario'}</th>
+          <th style="width:100px;text-align:right">Totale</th>
         </tr>
       </thead>
       <tbody>${righe}</tbody>
       <tfoot>
-        <tr><td colspan="6" style="text-align:right">Totale listino</td><td style="text-align:right">${eur(tl)}</td></tr>
-        <tr><td colspan="6" style="text-align:right">Sconto ${Math.round(sc*100)}%</td><td style="text-align:right">− ${eur(tl-tn)}</td></tr>
-        <tr><td colspan="6" style="text-align:right">Imponibile netto</td><td style="text-align:right">${eur(tn)}</td></tr>
-        <tr><td colspan="6" style="text-align:right">IVA ${D.meta.iva}%</td><td style="text-align:right">${eur(iva)}</td></tr>
-        <tr class="tot"><td colspan="6" style="text-align:right">TOTALE IVA INCLUSA</td><td style="text-align:right">${eur(tot)}</td></tr>
+        ${colSconto ? `<tr><td colspan="6" style="text-align:right">Totale listino</td><td style="text-align:right">${eur(tl)}</td></tr>
+        <tr><td colspan="6" style="text-align:right">Sconto ${Math.round(sc*100)}%</td><td style="text-align:right">− ${eur(tl-tn)}</td></tr>` : ''}
+        <tr><td colspan="${colSconto ? 6 : 5}" style="text-align:right">${colSconto ? 'Imponibile netto' : 'Totale imponibile'}</td><td style="text-align:right">${eur(tn)}</td></tr>
+        <tr><td colspan="${colSconto ? 6 : 5}" style="text-align:right">IVA ${D.meta.iva}%</td><td style="text-align:right">${eur(iva)}</td></tr>
+        <tr class="tot"><td colspan="${colSconto ? 6 : 5}" style="text-align:right">TOTALE IVA INCLUSA</td><td style="text-align:right">${eur(tot)}</td></tr>
       </tfoot>
     </table>
 
