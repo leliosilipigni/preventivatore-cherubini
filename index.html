@@ -421,6 +421,7 @@
 <div id="print-area"></div>
 
 <script src="data/dati.js"></script>
+<script src="data/archivio-seed.js"></script>
 <script>
 /* ============================================================
    CONFIGURATORE CHERUBINI — Ellesse Rappresentanze
@@ -647,7 +648,29 @@ function disegna(){
    ARCHIVIO PREVENTIVI (localStorage)
    ============================================================ */
 const ARCH_KEY = 'cherubini_archivio_v1';
+const SEED_APPLIED_KEY = 'cherubini_seed_applied_v1';
 let EDIT_ID = null;        // id del preventivo in modifica (per non duplicare)
+
+/* Importa una sola volta i preventivi precaricati (data/archivio-seed.js).
+   Se l'utente poi li cancella NON tornano: gli id applicati restano tracciati. */
+function applicaSeed(){
+  const seed = window.CHERUBINI_SEED;
+  if(!seed || !Array.isArray(seed.preventivi) || !seed.preventivi.length) return 0;
+
+  let applicati = [];
+  try{ applicati = JSON.parse(localStorage.getItem(SEED_APPLIED_KEY) || '[]'); }catch(e){}
+  const gia = new Set(applicati);
+
+  const list = leggiArchivio();
+  const ids = new Set(list.map(p => p.id));
+  const nuovi = seed.preventivi.filter(p => p && p.id && !ids.has(p.id) && !gia.has(p.id));
+  if(!nuovi.length) return 0;
+
+  if(!scriviArchivio(list.concat(nuovi))) return 0;
+  nuovi.forEach(p => gia.add(p.id));
+  try{ localStorage.setItem(SEED_APPLIED_KEY, JSON.stringify([...gia])); }catch(e){}
+  return nuovi.length;
+}
 
 function uid(){
   // id univoco: timestamp + casuale (evita collisioni su salvataggi ravvicinati)
@@ -995,6 +1018,7 @@ function azzera(){
   $('hint-cli').textContent =
     `${CLI.length} clienti Cherubini in archivio (${CLI.filter(c=>c.stato==='EX').length} EXPRESS · ${CLI.filter(c=>c.stato==='SPA').length} SPA) — ` +
     `il sistema sceglie da solo il listino corretto e lo sconto pattuito.`;
+  applicaSeed();
   aggiornaCnt();
 })();
 </script>

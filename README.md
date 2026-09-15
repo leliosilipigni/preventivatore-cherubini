@@ -22,6 +22,17 @@ Il secondo tab conserva tutti i preventivi fatti:
 
 ⚠️ L'archivio è salvato in `localStorage`, quindi **vive sul dispositivo e sul browser** che usi: non è sincronizzato tra telefono e PC. Usa **Esporta backup** per conservarlo, e **Importa backup** per riportarlo su un altro dispositivo.
 
+### Precaricare preventivi (`data/archivio-seed.js`)
+
+I preventivi in `data/archivio-seed.js` vengono importati **una volta sola** nell'archivio alla prima apertura. Se poi li cancelli non tornano (gli id applicati restano tracciati in `cherubini_seed_applied_v1`).
+
+Per aggiungerne altri:
+
+```bash
+# modificare RICHIESTE in /data/scripts/genera_seed_cherubini.py, poi:
+python3 /data/scripts/genera_seed_cherubini.py
+```
+
 ### Dati salvati per ogni preventivo
 
 `id, num, anno, data, cliente {cod, nome, stato, sconto}, listino, righe[], note, validita, pagamento, tl, tn, iva, tot`
