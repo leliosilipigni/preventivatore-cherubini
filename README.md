@@ -8,6 +8,24 @@ Preventivazione rapida Cherubini con distinzione automatica dei canali **EXPRESS
 2. **Cerchi gli articoli** nel listino attivo (codice o descrizione) e li aggiungi con la quantità.
 3. **Stampi / salvi in PDF** il preventivo con logo Cherubini, totali listino → sconto → netto → IVA.
 
+## Archivio preventivi
+
+Il secondo tab conserva tutti i preventivi fatti:
+
+- **Salvataggio automatico** a ogni stampa, oppure manuale con "Salva in archivio"
+- **Numero progressivo per anno** (es. `2026-001`), mai riusato anche dopo un'eliminazione
+- Ogni scheda mostra cliente, canale, sconto, data, numero articoli, pezzi, netto e totale
+- Azioni: **Apri e modifica** · **Ristampa** · **Duplica** (per creare una variante) · **Elimina**
+- **Ricerca** per cliente, numero o codice articolo
+- **Statistiche**: preventivi totali, totale netto, totale IVA inclusa, quanti nell'anno corrente
+- **Esporta / Importa backup** in JSON
+
+⚠️ L'archivio è salvato in `localStorage`, quindi **vive sul dispositivo e sul browser** che usi: non è sincronizzato tra telefono e PC. Usa **Esporta backup** per conservarlo, e **Importa backup** per riportarlo su un altro dispositivo.
+
+### Dati salvati per ogni preventivo
+
+`id, num, anno, data, cliente {cod, nome, stato, sconto}, listino, righe[], note, validita, pagamento, tl, tn, iva, tot`
+
 ## Canali e listini
 
 | Canale cliente | Listino usato | Articoli |

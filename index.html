@@ -182,6 +182,50 @@
     margin-top:26px;padding-top:16px;border-top:1px solid var(--border);
   }
 
+  /* ---------- TABS ---------- */
+  .tabs{display:flex;gap:6px;margin-bottom:18px;background:#e8eef2;padding:5px;border-radius:12px;width:fit-content;max-width:100%;flex-wrap:wrap}
+  .tab{
+    padding:9px 18px;border-radius:9px;border:none;background:transparent;cursor:pointer;
+    font-family:inherit;font-size:13.5px;font-weight:700;color:var(--txt2);transition:.15s;
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  .tab:hover{color:var(--navy)}
+  .tab.on{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(16,40,56,.12)}
+  .tab .cnt{
+    background:var(--orange);color:#fff;font-size:11px;font-weight:800;
+    padding:1px 7px;border-radius:20px;min-width:20px;text-align:center;
+  }
+  .tab.on .cnt{background:var(--navy)}
+
+  /* ---------- ARCHIVIO ---------- */
+  .arch-tools{display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end;margin-bottom:15px}
+  .arch-tools .f{flex:1;min-width:200px}
+  .arch-list{display:grid;gap:11px}
+  .arch-item{border:1.5px solid var(--border);border-radius:12px;padding:13px 15px;background:#fff;transition:.15s}
+  .arch-item:hover{border-color:#c3d4e0;box-shadow:0 2px 8px rgba(16,40,56,.07)}
+  .arch-item .h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .arch-item .num{font-size:11.5px;font-weight:800;color:var(--orange);letter-spacing:.5px}
+  .arch-item .cli{font-size:15.5px;font-weight:700;color:var(--navy);margin-top:1px}
+  .arch-item .meta{font-size:12px;color:var(--txt3);margin-top:3px}
+  .arch-item .amt{text-align:right;flex-shrink:0}
+  .arch-item .amt .v{font-size:17px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums}
+  .arch-item .amt .s{font-size:11px;color:var(--txt3)}
+  .arch-item .acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px;padding-top:11px;border-top:1px dashed #e2e9ee}
+  .mini{
+    padding:6px 13px;border-radius:8px;border:1.5px solid var(--border);background:#fff;
+    font-family:inherit;font-size:12.5px;font-weight:700;color:var(--txt2);cursor:pointer;transition:.15s;
+  }
+  .mini:hover{border-color:var(--navy);color:var(--navy)}
+  .mini.danger:hover{border-color:var(--red);color:var(--red)}
+  .mini.pri{background:var(--orange);border-color:var(--orange);color:#fff}
+  .mini.pri:hover{background:#d86d09;border-color:#d86d09;color:#fff}
+  .arch-empty{padding:40px 20px;text-align:center;color:var(--txt3)}
+  .arch-empty .big{font-size:38px;margin-bottom:10px}
+  .stat-row{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:16px;padding:13px 16px;
+    background:linear-gradient(135deg,#f7fafc,#eef4f8);border:1.5px solid #d8e4ec;border-radius:11px}
+  .stat-row .m{font-size:12px;color:var(--txt2)}
+  .stat-row .m b{display:block;font-size:17px;color:var(--navy);font-weight:800}
+
   /* ---------- STAMPA ---------- */
   #print-area{display:none}
   @media print{
@@ -229,6 +273,13 @@
 </header>
 
 <div class="wrap">
+
+  <div class="tabs">
+    <button class="tab on" id="tab-btn-config" onclick="mostraTab('config')">🧮 Configuratore</button>
+    <button class="tab" id="tab-btn-arch" onclick="mostraTab('arch')">📁 Archivio preventivi <span class="cnt" id="tab-cnt">0</span></button>
+  </div>
+
+  <div id="tab-config">
 
   <!-- 1 · CLIENTE -->
   <div class="card no-print">
@@ -323,7 +374,11 @@
 
     <div class="actions" style="margin-top:16px">
       <button class="btn btn-primary" onclick="stampa()">🖨 Stampa / Salva PDF</button>
+      <button class="btn btn-dark" onclick="salvaInArchivio(true)">💾 Salva in archivio</button>
       <button class="btn btn-ghost" onclick="azzera()">Azzera preventivo</button>
+    </div>
+    <div class="hint" style="margin-top:10px">
+      La stampa salva automaticamente il preventivo in archivio. Il numero è progressivo per anno.
     </div>
   </div>
 
@@ -331,6 +386,35 @@
     Dati aggiornati al <b>listino Cherubini 1 giugno 2026</b> · +3% motori/accessori · +6% manovra manuale<br>
     Configuratore gestito da Hermes · Ellesse Rappresentanze
   </footer>
+
+  </div><!-- /tab-config -->
+
+  <!-- ============ ARCHIVIO PREVENTIVI ============ -->
+  <div id="tab-arch" style="display:none">
+
+    <div class="card no-print">
+      <h2>📁 Archivio preventivi</h2>
+
+      <div class="stat-row" id="arch-stats"></div>
+
+      <div class="arch-tools">
+        <div class="f">
+          <label>Cerca nell'archivio</label>
+          <input type="text" id="cerca-arch" placeholder="Cliente, numero, codice articolo…" autocomplete="off">
+        </div>
+        <button class="mini" onclick="esportaArchivio()">⬇️ Esporta backup</button>
+        <button class="mini" onclick="document.getElementById('file-import').click()">⬆️ Importa backup</button>
+        <input type="file" id="file-import" accept=".json" style="display:none" onchange="importaArchivio(this)">
+      </div>
+
+      <div class="arch-list" id="arch-list"></div>
+    </div>
+
+    <footer class="q">
+      Archivio salvato <b>su questo dispositivo</b> · esporta il backup per conservarlo altrove
+    </footer>
+  </div>
+
 </div>
 
 <!-- ============ AREA DI STAMPA ============ -->
@@ -559,6 +643,249 @@ function disegna(){
   `;
 }
 
+/* ============================================================
+   ARCHIVIO PREVENTIVI (localStorage)
+   ============================================================ */
+const ARCH_KEY = 'cherubini_archivio_v1';
+let EDIT_ID = null;        // id del preventivo in modifica (per non duplicare)
+
+function uid(){
+  // id univoco: timestamp + casuale (evita collisioni su salvataggi ravvicinati)
+  return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function leggiArchivio(){
+  try{ return JSON.parse(localStorage.getItem(ARCH_KEY) || '[]'); }
+  catch(e){ return []; }
+}
+function scriviArchivio(list){
+  try{ localStorage.setItem(ARCH_KEY, JSON.stringify(list)); return true; }
+  catch(e){ alert('Impossibile salvare: memoria del browser piena o bloccata.'); return false; }
+}
+
+function nuovoNumero(){
+  const anno = new Date().getFullYear();
+  const list = leggiArchivio().filter(p => p.anno === anno);
+  // max+1: numeri mai riusati, anche dopo un'eliminazione (niente duplicati)
+  const max = list.reduce((m, p) => {
+    const n = parseInt(String(p.num || '').split('-')[1], 10);
+    return Number.isFinite(n) && n > m ? n : m;
+  }, 0);
+  return anno + '-' + String(max + 1).padStart(3, '0');
+}
+
+function snapshot(){
+  const sc = CLIENTE ? CLIENTE.sconto : 0;
+  const tl = totaleListino(), tn = totaleNetto();
+  const iva = tn * (D.meta.iva / 100);
+  return {
+    cliente: {cod: CLIENTE.cod, nome: CLIENTE.nome, stato: CLIENTE.stato, sconto: sc},
+    listino: CLIENTE.listino,
+    righe: RIGHE.map(r => ({cod: r.cod, desc: r.desc, prezzo: r.prezzo, qta: r.qta})),
+    note: $('p-note').value,
+    validita: $('p-valid').value,
+    pagamento: $('p-pag').value,
+    tl: tl, tn: tn, iva: iva, tot: tn + iva
+  };
+}
+
+function salvaInArchivio(manuale){
+  if(!CLIENTE){ alert('Seleziona prima un cliente.'); return null; }
+  if(!RIGHE.length){ alert('Aggiungi almeno un articolo.'); return null; }
+
+  const list = leggiArchivio();
+  const snap = snapshot();
+  const ts = Date.now();
+
+  if(EDIT_ID){
+    const i = list.findIndex(p => p.id === EDIT_ID);
+    if(i >= 0){
+      list[i] = Object.assign(list[i], snap, {ts: ts});
+      if(scriviArchivio(list)){ aggiornaCnt(); if(manuale) alert('Preventivo ' + list[i].num + ' aggiornato.'); return list[i].num; }
+      return null;
+    }
+  }
+  const num = nuovoNumero();
+  const rec = Object.assign({id: uid(), num: num, anno: new Date().getFullYear(),
+                             data: $('p-data').value || dataItaliana(), ts: ts}, snap);
+  list.push(rec);
+  if(scriviArchivio(list)){
+    EDIT_ID = rec.id;
+    aggiornaCnt();
+    if(manuale) alert('Salvato in archivio come preventivo ' + num + '.');
+    return num;
+  }
+  return null;
+}
+
+function aggiornaCnt(){
+  const n = leggiArchivio().length;
+  const el = $('tab-cnt');
+  if(el) el.textContent = n;
+}
+
+function fmtData(s){
+  if(!s) return '';
+  const p = String(s).split('/');
+  return p.length === 3 ? s : s;
+}
+
+function renderArchivio(){
+  const q = norm($('cerca-arch').value || '').trim();
+  const all = leggiArchivio().sort((a,b) => (b.ts||0) - (a.ts||0));
+  const list = q ? all.filter(p=>{
+    const t = norm(p.num + ' ' + p.cliente.nome + ' ' + p.cliente.cod + ' ' +
+                   p.righe.map(r=>r.cod+' '+r.desc).join(' '));
+    return q.split(/\s+/).every(w => t.includes(w));
+  }) : all;
+
+  // statistiche
+  const totNetto = all.reduce((s,p)=> s + p.tn, 0);
+  const totIva = all.reduce((s,p)=> s + p.tot, 0);
+  const perAnno = {};
+  all.forEach(p => { perAnno[p.anno] = (perAnno[p.anno]||0) + 1; });
+  $('arch-stats').innerHTML = all.length ? `
+    <div class="m">Preventivi in archivio<b>${all.length}</b></div>
+    <div class="m">Totale netto<b>${eur0(totNetto)}</b></div>
+    <div class="m">Totale IVA incl.<b>${eur0(totIva)}</b></div>
+    <div class="m">Anno corrente<b>${perAnno[new Date().getFullYear()] || 0}</b></div>
+  ` : '';
+
+  const box = $('arch-list');
+  if(!list.length){
+    box.innerHTML = `<div class="arch-empty">
+      <div class="big">📁</div>
+      ${all.length ? 'Nessun preventivo corrisponde alla ricerca.'
+                   : 'Nessun preventivo in archivio.<br>Crei un preventivo e premi <b>Stampa / Salva PDF</b>: verrà salvato qui.'}
+    </div>`;
+    return;
+  }
+
+  box.innerHTML = list.map(p=>{
+    const sc = p.cliente.sconto;
+    const art = p.righe.length;
+    const pezzi = p.righe.reduce((s,r)=> s + r.qta, 0);
+    return `<div class="arch-item">
+      <div class="h">
+        <div>
+          <div class="num">PREVENTIVO ${p.num}</div>
+          <div class="cli">${p.cliente.nome}</div>
+          <div class="meta">${p.cliente.cod} · ${p.listino === 'express' ? 'EXPRESS' : 'GENERALE'}
+            · sconto ${Math.round(sc*100)}% · ${fmtData(p.data)}</div>
+          <div class="meta">${art} articoli · ${nf0.format(pezzi)} pezzi</div>
+        </div>
+        <div class="amt">
+          <div class="v">${eur(p.tot)}</div>
+          <div class="s">netto ${eur(p.tn)} + IVA</div>
+        </div>
+      </div>
+      <div class="acts">
+        <button class="mini pri" onclick="apriPreventivo('${p.id}')">✏️ Apri e modifica</button>
+        <button class="mini" onclick="ristampa('${p.id}')">🖨 Ristampa</button>
+        <button class="mini" onclick="duplicaPreventivo('${p.id}')">📄 Duplica</button>
+        <button class="mini danger" onclick="eliminaPrev('${p.id}')">🗑 Elimina</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function trovaPrev(id){ return leggiArchivio().find(p => p.id === id); }
+
+function caricaInEditor(p){
+  const c = CLI.find(x => x.cod === p.cliente.cod) || {
+    cod: p.cliente.cod, nome: p.cliente.nome, stato: p.cliente.stato,
+    sconto: p.cliente.sconto, listino: p.listino, note: ''
+  };
+  scegliCliente(c);
+  RIGHE = p.righe.map(r => ({cod: r.cod, desc: r.desc, prezzo: r.prezzo, qta: r.qta}));
+  $('p-note').value = p.note || '';
+  $('p-valid').value = p.validita || '30 giorni';
+  $('p-pag').value = p.pagamento || 'Da definire';
+  $('p-data').value = p.data || dataItaliana();
+  disegna();
+}
+
+function apriPreventivo(id){
+  const p = trovaPrev(id);
+  if(!p) return;
+  caricaInEditor(p);
+  EDIT_ID = p.id;
+  mostraTab('config');
+  $('cerca-cli').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function ristampa(id){
+  const p = trovaPrev(id);
+  if(!p) return;
+  caricaInEditor(p);
+  EDIT_ID = p.id;
+  stampa();
+}
+
+function duplicaPreventivo(id){
+  const p = trovaPrev(id);
+  if(!p) return;
+  caricaInEditor(p);
+  EDIT_ID = null;          // forza un nuovo numero
+  mostraTab('config');
+  alert('Copia caricata. Premi "Salva in archivio" per creare un nuovo numero.');
+}
+
+function eliminaPrev(id){
+  const p = trovaPrev(id);
+  if(!p) return;
+  if(!confirm('Eliminare definitivamente il preventivo ' + p.num + ' — ' + p.cliente.nome + '?')) return;
+  scriviArchivio(leggiArchivio().filter(x => x.id !== id));
+  if(EDIT_ID === id) EDIT_ID = null;
+  aggiornaCnt();
+  renderArchivio();
+}
+
+function esportaArchivio(){
+  const all = leggiArchivio();
+  if(!all.length){ alert('Archivio vuoto.'); return; }
+  const blob = new Blob([JSON.stringify(all, null, 1)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'backup-preventivi-cherubini-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importaArchivio(inp){
+  const f = inp.files && inp.files[0];
+  if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const nuovi = JSON.parse(r.result);
+      if(!Array.isArray(nuovi)) throw new Error('formato');
+      const attuali = leggiArchivio();
+      const ids = new Set(attuali.map(p => p.id));
+      const aggiunti = nuovi.filter(p => p && p.id && !ids.has(p.id));
+      if(!aggiunti.length){ alert('Nessun preventivo nuovo da importare.'); return; }
+      if(!confirm("Importare " + aggiunti.length + " preventivi? L'archivio attuale viene mantenuto.")) return;
+      scriviArchivio(attuali.concat(aggiunti));
+      aggiornaCnt();
+      renderArchivio();
+      alert('Importati ' + aggiunti.length + ' preventivi.');
+    }catch(e){ alert('File non valido: serve un backup esportato da questo configuratore.'); }
+  };
+  r.readAsText(f);
+  inp.value = '';
+}
+
+function mostraTab(which){
+  const cfg = which === 'config';
+  $('tab-config').style.display = cfg ? 'block' : 'none';
+  $('tab-arch').style.display = cfg ? 'none' : 'block';
+  $('tab-btn-config').classList.toggle('on', cfg);
+  $('tab-btn-arch').classList.toggle('on', !cfg);
+  if(!cfg){ aggiornaCnt(); renderArchivio(); }
+}
+
+$('cerca-arch').addEventListener('input', renderArchivio);
+
 /* ---------- STAMPA ---------- */
 function dataItaliana(){
   const d = new Date();
@@ -568,6 +895,9 @@ function dataItaliana(){
 function stampa(){
   if(!RIGHE.length){ alert('Aggiungi almeno un articolo prima di stampare.'); return; }
   if(!CLIENTE){ alert('Seleziona prima un cliente.'); return; }
+
+  // salva (o aggiorna) in archivio prima di stampare
+  const numPrev = salvaInArchivio(false) || '—';
 
   const sc = CLIENTE.sconto;
   const tl = totaleListino(), tn = totaleNetto();
@@ -599,8 +929,8 @@ function stampa(){
       </div>
     </div>
 
-    <div class="p-title">Preventivo ${lista}</div>
-    <div style="font-size:9.5pt;color:#5b6b76;margin-bottom:14px">Listino Cherubini in vigore dal 01/06/2026</div>
+    <div class="p-title">Preventivo Cherubini n. ${numPrev} — Listino ${lista}</div>
+    <div style="font-size:9.5pt;color:#5b6b76;margin-bottom:14px">Listino Cherubini in vigore dal 01/06/2026 · validità 30 giorni</div>
 
     <div class="p-block">
       <div class="b"><i>Cliente</i><b>${CLIENTE.nome}</b><div style="color:#5b6b76;font-size:9pt">${CLIENTE.cod}</div></div>
@@ -653,6 +983,8 @@ function stampa(){
 function azzera(){
   if(!RIGHE.length || confirm('Azzerare tutte le righe del preventivo?')){
     RIGHE = [];
+    EDIT_ID = null;
+    $('p-note').value = '';
     disegna();
   }
 }
@@ -663,6 +995,7 @@ function azzera(){
   $('hint-cli').textContent =
     `${CLI.length} clienti Cherubini in archivio (${CLI.filter(c=>c.stato==='EX').length} EXPRESS · ${CLI.filter(c=>c.stato==='SPA').length} SPA) — ` +
     `il sistema sceglie da solo il listino corretto e lo sconto pattuito.`;
+  aggiornaCnt();
 })();
 </script>
 </body>
