@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configuratore Cherubini — Ellesse Rappresentanze</title>
+<style>
+  :root{
+    --navy:#08202d;
+    --navy2:#0e3040;
+    --navy3:#123c50;
+    --orange:#ef7c13;
+    --orange2:#ff9d3f;
+    --bg:#f4f6f8;
+    --card:#ffffff;
+    --border:#dde4e9;
+    --txt:#1d2b34;
+    --txt2:#5b6b76;
+    --txt3:#8a9aa4;
+    --green:#1aa864;
+    --red:#d64545;
+    --radius:14px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--txt);font-size:15px;line-height:1.5;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 16px 60px}
+
+  /* ---------- HEADER ---------- */
+  header{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);
+    color:#fff;padding:20px 0 24px;margin-bottom:22px;
+    border-bottom:4px solid var(--orange);
+  }
+  header .wrap{padding-bottom:0;display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:16px}
+  .brand img{height:34px;width:auto;filter:brightness(0) invert(1);opacity:.97}
+  .brand .sep{width:1px;height:36px;background:rgba(255,255,255,.22)}
+  .brand .ttl{font-size:17px;font-weight:700;letter-spacing:.2px}
+  .brand .sub{font-size:12px;color:rgba(255,255,255,.62);font-weight:500}
+  .agente{font-size:12px;text-align:right;color:rgba(255,255,255,.8);line-height:1.45}
+  .agente b{color:#fff;font-size:13px;display:block}
+
+  /* ---------- CARD ---------- */
+  .card{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:18px 20px;margin-bottom:18px;box-shadow:0 1px 3px rgba(16,40,56,.06);
+  }
+  .card > h2{
+    font-size:13px;text-transform:uppercase;letter-spacing:1.1px;color:var(--navy);
+    margin-bottom:14px;display:flex;align-items:center;gap:9px;font-weight:700;
+  }
+  .step{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;
+    font-size:12px;font-weight:700;flex:0 0 auto;
+  }
+  label{display:block;font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+  input[type=text],input[type=number],select,textarea{
+    width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;
+    font-size:14.5px;font-family:inherit;color:var(--txt);background:#fff;transition:border-color .15s;
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(239,124,19,.13)}
+  textarea{resize:vertical;min-height:64px}
+
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:720px){.g2,.g3{grid-template-columns:1fr}}
+
+  /* ---------- AUTOCOMPLETE CLIENTE ---------- */
+  .ac-box{position:relative}
+  .ac-list{
+    position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;
+    border:1.5px solid var(--border);border-radius:10px;max-height:320px;overflow-y:auto;
+    z-index:60;box-shadow:0 10px 28px rgba(8,32,45,.16);display:none;
+  }
+  .ac-list.on{display:block}
+  .ac-item{padding:10px 13px;cursor:pointer;border-bottom:1px solid #f0f4f6;display:flex;justify-content:space-between;gap:10px;align-items:center}
+  .ac-item:last-child{border-bottom:none}
+  .ac-item:hover,.ac-item.sel{background:#f6f9fb}
+  .ac-item .nm{font-size:14px;font-weight:600;color:var(--txt)}
+  .ac-item .cd{font-size:11px;color:var(--txt3);font-weight:600;letter-spacing:.3px}
+  .ac-item .rt{display:flex;gap:6px;align-items:center;flex-shrink:0}
+  .badge{font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:20px;letter-spacing:.5px}
+  .b-ex{background:#fff1e2;color:#b85f06}
+  .b-spa{background:#e5f1fa;color:#12587e}
+  .b-sc{background:#e8f7ef;color:#127a49}
+
+  /* ---------- CLIENTE SELEZIONATO ---------- */
+  .cliente-box{
+    display:none;margin-top:14px;padding:14px 16px;border-radius:11px;
+    background:linear-gradient(135deg,#f7fafc,#eef4f8);border:1.5px solid #d8e4ec;
+  }
+  .cliente-box.on{display:block}
+  .cliente-box .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .cliente-box .nm{font-size:17px;font-weight:700;color:var(--navy)}
+  .cliente-box .cd{font-size:12px;color:var(--txt3);font-weight:600}
+  .meta-row{display:flex;gap:20px;flex-wrap:wrap;margin-top:11px;padding-top:11px;border-top:1px dashed #c8d8e2}
+  .meta-row .m{font-size:12.5px;color:var(--txt2)}
+  .meta-row .m b{display:block;font-size:15px;color:var(--navy);font-weight:700}
+  .warn-note{
+    margin-top:10px;font-size:12.5px;padding:8px 11px;border-radius:8px;
+    background:#fff8e8;border-left:3px solid var(--orange);color:#7a5210;
+  }
+
+  /* ---------- ARTICOLI ---------- */
+  .art-res{
+    margin-top:12px;max-height:340px;overflow-y:auto;
+    border:1.5px solid var(--border);border-radius:10px;
+  }
+  .art-row{
+    display:grid;grid-template-columns:110px 1fr 92px 96px;gap:10px;align-items:center;
+    padding:9px 12px;border-bottom:1px solid #f0f4f6;cursor:pointer;font-size:13.5px;
+  }
+  .art-row:last-child{border-bottom:none}
+  .art-row:hover{background:#f6f9fb}
+  .art-row .c{font-weight:700;color:var(--navy);font-size:12.5px;letter-spacing:.2px}
+  .art-row .d{color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .art-row .p{text-align:right;font-weight:700;color:var(--navy)}
+  .art-row .q{text-align:right;font-size:11.5px;color:var(--txt3)}
+  @media(max-width:620px){
+    .art-row{grid-template-columns:1fr 84px;gap:4px 10px;padding:10px 11px}
+    .art-row .c{grid-column:1}
+    .art-row .d{grid-column:1;grid-row:2;font-size:12.5px;white-space:normal}
+    .art-row .p{grid-column:2;grid-row:1}
+    .art-row .q{grid-column:2;grid-row:2}
+  }
+  .empty{padding:22px;text-align:center;color:var(--txt3);font-size:13.5px}
+  .hint{font-size:12px;color:var(--txt3);margin-top:9px}
+
+  /* ---------- TABELLA PREVENTIVO ---------- */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:680px}
+  thead th{
+    background:var(--navy);color:#fff;padding:9px 10px;text-align:left;
+    font-size:11px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;white-space:nowrap;
+  }
+  thead th.n{text-align:right}
+  tbody td{padding:9px 10px;border-bottom:1px solid #eef2f5;vertical-align:middle}
+  tbody td.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  tbody tr:hover{background:#fafcfd}
+  tfoot td{
+    padding:11px 10px;font-weight:700;background:#f2f7fa;
+    border-top:2px solid var(--navy);font-variant-numeric:tabular-nums;
+  }
+  tfoot td.n{text-align:right}
+  tfoot tr.tot td{background:var(--navy);color:#fff;font-size:15px;border-top:none}
+  tfoot tr.tot td.n{color:#fff}
+  .del{
+    background:none;border:none;color:#c3ccd3;font-size:19px;line-height:1;cursor:pointer;
+    padding:2px 6px;border-radius:6px;transition:.15s;
+  }
+  .del:hover{color:var(--red);background:#fdeaea}
+  td input.qta{
+    width:74px;padding:6px 8px;text-align:right;font-size:13.5px;
+    border:1.5px solid var(--border);border-radius:7px;
+  }
+  .cod-c{font-weight:700;color:var(--navy);font-size:12.5px}
+  .desc-c{color:var(--txt);font-size:13px}
+
+  /* ---------- AZIONI ---------- */
+  .actions{display:flex;gap:11px;flex-wrap:wrap;margin-top:6px}
+  button.btn{
+    padding:11px 20px;border-radius:9px;border:none;font-size:14px;font-weight:700;
+    cursor:pointer;font-family:inherit;transition:.15s;display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn-primary{background:var(--orange);color:#fff}
+  .btn-primary:hover{background:#d86d09}
+  .btn-dark{background:var(--navy);color:#fff}
+  .btn-dark:hover{background:var(--navy3)}
+  .btn-ghost{background:#fff;color:var(--txt2);border:1.5px solid var(--border)}
+  .btn-ghost:hover{border-color:var(--navy);color:var(--navy)}
+  .badge-listino{
+    display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:20px;
+    font-size:12px;font-weight:700;background:#fff1e2;color:#b85f06;border:1px solid #f7d9b4;
+  }
+  footer.q{
+    text-align:center;font-size:11.5px;color:var(--txt3);
+    margin-top:26px;padding-top:16px;border-top:1px solid var(--border);
+  }
+
+  /* ---------- STAMPA ---------- */
+  #print-area{display:none}
+  @media print{
+    @page{size:A4;margin:11mm 12mm}
+    body{background:#fff;font-size:10.5pt}
+    .wrap,header,footer.q,.no-print{display:none!important}
+    #print-area{display:block!important}
+    #print-area table{min-width:0;font-size:9.5pt}
+    #print-area thead th{background:#08202d!important;-webkit-print-color-adjust:exact;color:#fff!important;print-color-adjust:exact}
+    #print-area tfoot tr.tot td{background:#08202d!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+  .p-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:11px;border-bottom:3px solid #08202d;margin-bottom:16px}
+  .p-head img{height:38px;width:auto}
+  .p-head .r{text-align:right;font-size:9.5pt;color:#5b6b76;line-height:1.5}
+  .p-head .r b{color:#08202d;font-size:11pt}
+  .p-title{font-size:15pt;font-weight:700;color:#08202d;margin-bottom:3px}
+  .p-block{display:flex;gap:26px;flex-wrap:wrap;margin-bottom:15px;font-size:9.5pt}
+  .p-block .b{min-width:190px}
+  .p-block .b i{display:block;font-style:normal;font-size:8pt;text-transform:uppercase;letter-spacing:.6px;color:#8a9aa4;font-weight:700;margin-bottom:2px}
+  .p-block .b b{font-size:11pt;color:#08202d}
+  .p-note{margin-top:13px;font-size:9pt;color:#3d4c56;background:#f6f9fb;border-left:3px solid #ef7c13;padding:9px 12px;border-radius:5px}
+  .p-foot{margin-top:20px;padding-top:11px;border-top:1px solid #dde4e9;font-size:8pt;color:#8a9aa4;text-align:center}
+  .p-sign{margin-top:26px;display:flex;gap:40px;font-size:9pt;color:#5b6b76}
+  .p-sign div{flex:1;border-top:1px solid #b9c5cd;padding-top:5px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <img src="assets/logo_2.png" alt="Cherubini">
+      <div class="sep"></div>
+      <div>
+        <div class="ttl">Configuratore Cherubini</div>
+        <div class="sub">Preventivazione rapida · canali EXPRESS e SPA</div>
+      </div>
+    </div>
+    <div class="agente">
+      <b>Lelio Silipigni</b>
+      Ellesse Rappresentanze<br>
+      info@ellesserappresentanze.it
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- 1 · CLIENTE -->
+  <div class="card no-print">
+    <h2><span class="step">1</span> Cliente</h2>
+    <div class="ac-box">
+      <input type="text" id="cerca-cli" placeholder="Digita nome o codice cliente (es. Triscele, C 001379)…" autocomplete="off">
+      <div class="ac-list" id="lista-cli"></div>
+    </div>
+    <div class="hint" id="hint-cli">
+      51 clienti Cherubini in archivio — il sistema sceglie da solo il listino corretto (EXPRESS o SPA) e lo sconto pattuito.
+    </div>
+
+    <div class="cliente-box" id="box-cli">
+      <div class="top">
+        <div>
+          <div class="nm" id="cl-nome">—</div>
+          <div class="cd" id="cl-cod">—</div>
+        </div>
+        <div class="rt" id="cl-badge"></div>
+      </div>
+      <div class="meta-row">
+        <div class="m">Stato<b id="cl-stato">—</b></div>
+        <div class="m">Sconto applicato<b id="cl-sconto">—</b></div>
+        <div class="m">Listino in uso<b id="cl-listino">—</b></div>
+        <div class="m">Articoli disponibili<b id="cl-art">—</b></div>
+      </div>
+      <div class="warn-note" id="cl-note" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- 2 · ARTICOLI -->
+  <div class="card no-print" id="card-art" style="display:none">
+    <h2><span class="step">2</span> Aggiungi articoli</h2>
+    <div class="g2">
+      <div>
+        <label>Cerca per codice o descrizione</label>
+        <input type="text" id="cerca-art" placeholder="es. MOVO, ASTA E7, 73507011, CARD 90…" autocomplete="off">
+      </div>
+      <div>
+        <label>Quantità da aggiungere</label>
+        <input type="number" id="qta-art" value="1" min="1" step="1">
+      </div>
+    </div>
+    <div class="art-res" id="res-art">
+      <div class="empty">Cerca un articolo per aggiungerlo al preventivo.</div>
+    </div>
+    <div class="hint" id="hint-art"></div>
+  </div>
+
+  <!-- 3 · PREVENTIVO -->
+  <div class="card no-print" id="card-prev" style="display:none">
+    <h2><span class="step">3</span> Preventivo</h2>
+
+    <div class="g3" style="margin-bottom:14px">
+      <div>
+        <label>Data preventivo</label>
+        <input type="text" id="p-data">
+      </div>
+      <div>
+        <label>Validità</label>
+        <input type="text" id="p-valid" value="30 giorni">
+      </div>
+      <div>
+        <label>Pagamento</label>
+        <input type="text" id="p-pag" value="Da definire">
+      </div>
+    </div>
+
+    <div class="tw">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th style="width:34px">#</th>
+            <th style="width:112px">Codice</th>
+            <th>Descrizione</th>
+            <th class="n" style="width:74px">Q.tà</th>
+            <th class="n" style="width:96px">Prezzo listino</th>
+            <th class="n" style="width:100px">Prezzo netto</th>
+            <th class="n" style="width:104px">Totale netto</th>
+            <th style="width:36px"></th>
+          </tr>
+        </thead>
+        <tbody id="tb"></tbody>
+        <tfoot id="tf"></tfoot>
+      </table>
+    </div>
+
+    <div style="margin-top:16px">
+      <label>Note per il cliente</label>
+      <textarea id="p-note" placeholder="Es. consegna prevista, condizioni particolari, accessori inclusi…"></textarea>
+    </div>
+
+    <div class="actions" style="margin-top:16px">
+      <button class="btn btn-primary" onclick="stampa()">🖨 Stampa / Salva PDF</button>
+      <button class="btn btn-ghost" onclick="azzera()">Azzera preventivo</button>
+    </div>
+  </div>
+
+  <footer class="q">
+    Dati aggiornati al <b>listino Cherubini 1 giugno 2026</b> · +3% motori/accessori · +6% manovra manuale<br>
+    Configuratore gestito da Hermes · Ellesse Rappresentanze
+  </footer>
+</div>
+
+<!-- ============ AREA DI STAMPA ============ -->
+<div id="print-area"></div>
+
+<script src="data/dati.js"></script>
+<script>
+/* ============================================================
+   CONFIGURATORE CHERUBINI — Ellesse Rappresentanze
+   ============================================================ */
+const D = window.CHERUBINI_DATA;
+const nf0 = new Intl.NumberFormat('it-IT',{minimumFractionDigits:0,maximumFractionDigits:0});
+const nf2 = new Intl.NumberFormat('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+const eur = v => '€ ' + nf2.format(v);
+const eur0 = v => '€ ' + nf0.format(Math.round(v));
+
+let CLIENTE = null;
+let LISTINO = [];        // listino attivo
+let RIGHE = [];          // righe preventivo
+
+const $ = id => document.getElementById(id);
+
+/* ---------- CLIENTI ---------- */
+const CLI = D.clienti.slice().sort((a,b)=>a.nome.localeCompare(b.nome,'it'));
+
+function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+function filtraClienti(q){
+  q = norm(q).trim();
+  if(!q) return CLI.slice(0,12);
+  const parole = q.split(/\s+/);
+  return CLI.filter(c=>{
+    const t = norm(c.nome + ' ' + c.cod);
+    return parole.every(p=>t.includes(p));
+  }).slice(0,25);
+}
+
+function disegnaClienti(list){
+  const box = $('lista-cli');
+  if(!list.length){ box.innerHTML = '<div class="empty">Nessun cliente trovato</div>'; box.classList.add('on'); return; }
+  box.innerHTML = list.map(c=>{
+    const b = c.stato === 'EX' ? 'b-ex' : 'b-spa';
+    const lbl = c.stato === 'EX' ? 'EXPRESS' : 'SPA';
+    return `<div class="ac-item" data-cod="${c.cod}">
+      <div><div class="nm">${c.nome}</div><div class="cd">${c.cod}</div></div>
+      <div class="rt">
+        <span class="badge ${b}">${lbl}</span>
+        <span class="badge b-sc">${Math.round(c.sconto*100)}%</span>
+      </div>
+    </div>`;
+  }).join('');
+  box.classList.add('on');
+  box.querySelectorAll('.ac-item').forEach(el=>{
+    el.onclick = ()=>{
+      const c = CLI.find(x=>x.cod === el.dataset.cod);
+      if(c) scegliCliente(c);
+    };
+  });
+}
+
+function scegliCliente(c){
+  CLIENTE = c;
+  LISTINO = c.listino === 'express' ? D.listino_express : D.listino_generale;
+  $('lista-cli').classList.remove('on');
+  $('cerca-cli').value = c.nome;
+
+  $('box-cli').classList.add('on');
+  $('cl-nome').textContent = c.nome;
+  $('cl-cod').textContent = c.cod;
+  $('cl-stato').textContent = c.stato;
+  $('cl-sconto').textContent = (c.sconto*100).toFixed(0) + ' %';
+  $('cl-listino').textContent = c.listino === 'express' ? 'EXPRESS' : 'GENERALE';
+  $('cl-art').textContent = nf0.format(LISTINO.length) + ' articoli';
+  $('cl-badge').innerHTML =
+    `<span class="badge ${c.stato==='EX'?'b-ex':'b-spa'}">${c.stato}</span>
+     <span class="badge b-sc">sconto ${Math.round(c.sconto*100)}%</span>`;
+
+  const note = $('cl-note');
+  if(c.note && c.note.toUpperCase() !== 'NO'){
+    note.style.display = 'block';
+    note.textContent = 'Nota visita: ' + c.note;
+  } else { note.style.display = 'none'; }
+
+  $('card-art').style.display = 'block';
+  $('card-prev').style.display = 'block';
+  const info = D.meta.listini[c.listino];
+  $('hint-art').innerHTML =
+    `Listino attivo: <b>${info.nome}</b> (${info.validita}) · ${nf0.format(LISTINO.length)} articoli · sconto cliente <b>${Math.round(c.sconto*100)}%</b>`;
+  RIGHE = [];
+  disegna();
+  $('cerca-art').focus();
+}
+
+$('cerca-cli').addEventListener('input', e=> disegnaClienti(filtraClienti(e.target.value)));
+$('cerca-cli').addEventListener('focus', e=> disegnaClienti(filtraClienti(e.target.value)));
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.ac-box')) $('lista-cli').classList.remove('on');
+});
+
+/* ---------- ARTICOLI ---------- */
+function cercaArticoli(q){
+  q = norm(q).trim();
+  if(q.length < 2) return [];
+  const parole = q.split(/\s+/);
+  const out = [];
+  for(const a of LISTINO){
+    const t = norm(a.cod + ' ' + a.desc);
+    if(parole.every(p=>t.includes(p))){ out.push(a); if(out.length >= 40) break; }
+  }
+  return out;
+}
+
+function disegnaArticoli(list, q){
+  const box = $('res-art');
+  if(!q || q.length < 2){
+    box.innerHTML = '<div class="empty">Cerca un articolo per aggiungerlo al preventivo.</div>';
+    return;
+  }
+  if(!list.length){
+    box.innerHTML = '<div class="empty">Nessun articolo trovato in questo listino.</div>';
+    return;
+  }
+  const sc = CLIENTE ? CLIENTE.sconto : 0;
+  box.innerHTML = list.map(a=>`
+    <div class="art-row" data-cod="${a.cod}">
+      <div class="c">${a.cod}</div>
+      <div class="d">${a.desc}</div>
+      <div class="p">${eur(a.prezzo)}<div class="q">netto ${eur(a.prezzo*(1-sc))}</div></div>
+      <div class="q">${a.cartone?'conf. '+a.cartone:''}${a.multipla?' · mult. '+a.multipla:''}</div>
+    </div>`).join('');
+  box.querySelectorAll('.art-row').forEach(el=>{
+    el.onclick = ()=>{ aggiungi(el.dataset.cod); };
+  });
+}
+
+$('cerca-art').addEventListener('input', e=>{
+  const q = e.target.value;
+  disegnaArticoli(cercaArticoli(q), q);
+});
+$('cerca-art').addEventListener('keydown', e=>{
+  if(e.key === 'Enter'){
+    const l = cercaArticoli(e.target.value);
+    if(l.length){ aggiungi(l[0].cod); }
+  }
+});
+
+function aggiungi(cod){
+  const a = LISTINO.find(x=>x.cod === cod);
+  if(!a) return;
+  const q = Math.max(1, parseInt($('qta-art').value || '1', 10));
+  // moltiplo la quantità per la multipla di ordinazione se prevista
+  const mult = a.multipla && a.multipla > 1 ? a.multipla : 1;
+  const qta = Math.max(q, 1) * mult;
+  const ex = RIGHE.find(r=>r.cod === cod);
+  if(ex){ ex.qta += (q * mult); }
+  else { RIGHE.push({cod:a.cod, desc:a.desc, prezzo:a.prezzo, qta:qta, conf:a.cartone, mult:mult}); }
+  $('qta-art').value = 1;
+  $('cerca-art').value = '';
+  disegnaArticoli([], '');
+  $('cerca-art').focus();
+  disegna();
+}
+
+/* ---------- TABELLA ---------- */
+function totaleListino(){ return RIGHE.reduce((s,r)=> s + r.prezzo*r.qta, 0); }
+function totaleNetto(){
+  const sc = CLIENTE ? CLIENTE.sconto : 0;
+  return RIGHE.reduce((s,r)=> s + r.prezzo*(1-sc)*r.qta, 0);
+}
+
+function disegna(){
+  const sc = CLIENTE ? CLIENTE.sconto : 0;
+  const tb = $('tb');
+
+  if(!RIGHE.length){
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:26px;color:#8a9aa4">Nessun articolo. Cerca e clicca un articolo qui sopra.</td></tr>';
+  } else {
+    tb.innerHTML = RIGHE.map((r,i)=>{
+      const netto = r.prezzo * (1-sc);
+      return `<tr>
+        <td class="n" style="color:#8a9aa4">${i+1}</td>
+        <td class="cod-c">${r.cod}</td>
+        <td class="desc-c">${r.desc}</td>
+        <td class="n"><input class="qta" type="number" min="1" step="1" value="${r.qta}" data-i="${i}"></td>
+        <td class="n">${eur(r.prezzo)}</td>
+        <td class="n">${eur(netto)}</td>
+        <td class="n" style="font-weight:700">${eur(netto*r.qta)}</td>
+        <td><button class="del" data-del="${i}" title="Rimuovi">×</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  tb.querySelectorAll('input.qta').forEach(inp=>{
+    inp.onchange = ()=>{
+      const i = +inp.dataset.i;
+      const v = Math.max(1, parseInt(inp.value || '1', 10));
+      RIGHE[i].qta = v;
+      disegna();
+    };
+  });
+  tb.querySelectorAll('button.del').forEach(b=>{
+    b.onclick = ()=>{
+      RIGHE.splice(+b.dataset.del, 1);
+      disegna();
+    };
+  });
+
+  const tl = totaleListino();
+  const tn = totaleNetto();
+  const risp = tl - tn;
+  const iva = tn * (D.meta.iva / 100);
+  const tot = tn + iva;
+
+  const tf = $('tf');
+  if(!RIGHE.length){ tf.innerHTML = ''; return; }
+
+  const sotto = tn < D.meta.franco_destino_min;
+  tf.innerHTML = `
+    <tr><td colspan="6" class="n">Totale listino</td><td class="n">${eur(tl)}</td><td></td></tr>
+    <tr><td colspan="6" class="n">Sconto cliente ${Math.round(sc*100)}%</td><td class="n" style="color:#d64545">− ${eur(risp)}</td><td></td></tr>
+    <tr><td colspan="6" class="n">Imponibile netto</td><td class="n">${eur(tn)}</td><td></td></tr>
+    <tr><td colspan="6" class="n">IVA ${D.meta.iva}%</td><td class="n">${eur(iva)}</td><td></td></tr>
+    <tr class="tot"><td colspan="6" class="n">TOTALE IVA INCLUSA</td><td class="n">${eur(tot)}</td><td></td></tr>
+    ${sotto ? `<tr><td colspan="8" class="n" style="font-weight:600;font-size:12px;color:#b85f06;background:#fff8e8">
+        ⚠ Ordine sotto il minimo di ${eur0(D.meta.franco_destino_min)} per la consegna franco destino</td></tr>` : ''}
+  `;
+}
+
+/* ---------- STAMPA ---------- */
+function dataItaliana(){
+  const d = new Date();
+  return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
+function stampa(){
+  if(!RIGHE.length){ alert('Aggiungi almeno un articolo prima di stampare.'); return; }
+  if(!CLIENTE){ alert('Seleziona prima un cliente.'); return; }
+
+  const sc = CLIENTE.sconto;
+  const tl = totaleListino(), tn = totaleNetto();
+  const iva = tn * (D.meta.iva/100), tot = tn + iva;
+  const dt = $('p-data').value || dataItaliana();
+  const lista = $('cl-listino').textContent;
+
+  const righe = RIGHE.map((r,i)=>{
+    const netto = r.prezzo * (1-sc);
+    return `<tr>
+      <td style="text-align:right;color:#8a9aa4">${i+1}</td>
+      <td style="font-weight:700;color:#08202d;font-size:9pt">${r.cod}</td>
+      <td>${r.desc}</td>
+      <td style="text-align:right">${r.qta}</td>
+      <td style="text-align:right">${eur(r.prezzo)}</td>
+      <td style="text-align:right">${eur(netto)}</td>
+      <td style="text-align:right;font-weight:700">${eur(netto*r.qta)}</td>
+    </tr>`;
+  }).join('');
+
+  $('print-area').innerHTML = `
+    <div class="p-head">
+      <img src="assets/logo_2.png" alt="Cherubini">
+      <div class="r">
+        <b>Ellesse Rappresentanze</b>
+        Lelio Silipigni<br>
+        info@ellesserappresentanze.it<br>
+        Agente Cherubini
+      </div>
+    </div>
+
+    <div class="p-title">Preventivo ${lista}</div>
+    <div style="font-size:9.5pt;color:#5b6b76;margin-bottom:14px">Listino Cherubini in vigore dal 01/06/2026</div>
+
+    <div class="p-block">
+      <div class="b"><i>Cliente</i><b>${CLIENTE.nome}</b><div style="color:#5b6b76;font-size:9pt">${CLIENTE.cod}</div></div>
+      <div class="b"><i>Data</i><b>${dt}</b></div>
+      <div class="b"><i>Validità</i><b>${$('p-valid').value}</b></div>
+      <div class="b"><i>Pagamento</i><b>${$('p-pag').value}</b></div>
+      <div class="b"><i>Sconto applicato</i><b>${Math.round(sc*100)} %</b></div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:30px">#</th><th style="width:108px">Codice</th><th>Descrizione</th>
+          <th style="width:60px;text-align:right">Q.tà</th>
+          <th style="width:88px;text-align:right">Prezzo listino</th>
+          <th style="width:88px;text-align:right">Prezzo netto</th>
+          <th style="width:96px;text-align:right">Totale netto</th>
+        </tr>
+      </thead>
+      <tbody>${righe}</tbody>
+      <tfoot>
+        <tr><td colspan="6" style="text-align:right">Totale listino</td><td style="text-align:right">${eur(tl)}</td></tr>
+        <tr><td colspan="6" style="text-align:right">Sconto ${Math.round(sc*100)}%</td><td style="text-align:right">− ${eur(tl-tn)}</td></tr>
+        <tr><td colspan="6" style="text-align:right">Imponibile netto</td><td style="text-align:right">${eur(tn)}</td></tr>
+        <tr><td colspan="6" style="text-align:right">IVA ${D.meta.iva}%</td><td style="text-align:right">${eur(iva)}</td></tr>
+        <tr class="tot"><td colspan="6" style="text-align:right">TOTALE IVA INCLUSA</td><td style="text-align:right">${eur(tot)}</td></tr>
+      </tfoot>
+    </table>
+
+    ${$('p-note').value ? `<div class="p-note"><b>Note:</b> ${$('p-note').value}</div>` : ''}
+
+    <div class="p-note" style="border-left-color:#08202d;background:#eef4f8">
+      Consegna franco destino per ordini a partire da ${eur0(D.meta.franco_destino_min)}.
+      Prezzi riferiti al listino Cherubini in vigore dal 01/06/2026.
+    </div>
+
+    <div class="p-sign">
+      <div>Data e firma cliente</div>
+      <div>Lelio Silipigni — Ellesse Rappresentanze</div>
+    </div>
+
+    <div class="p-foot">
+      Ellesse Rappresentanze · Lelio Silipigni · info@ellesserappresentanze.it · Configuratore gestito da Hermes
+    </div>
+  `;
+
+  window.print();
+}
+
+function azzera(){
+  if(!RIGHE.length || confirm('Azzerare tutte le righe del preventivo?')){
+    RIGHE = [];
+    disegna();
+  }
+}
+
+/* ---------- INIT ---------- */
+(function init(){
+  $('p-data').value = dataItaliana();
+  $('hint-cli').textContent =
+    `${CLI.length} clienti Cherubini in archivio (${CLI.filter(c=>c.stato==='EX').length} EXPRESS · ${CLI.filter(c=>c.stato==='SPA').length} SPA) — ` +
+    `il sistema sceglie da solo il listino corretto e lo sconto pattuito.`;
+})();
+</script>
+</body>
+</html>
